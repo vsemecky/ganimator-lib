@@ -32,7 +32,7 @@ def load_network(pkl):
             return networks_cache[pkl]
 
 
-def generate_image(pkl: str, seed: int = 42, psi: float = 0.5, randomize_noise: bool = False) -> PIL.Image:
+def generate_image(pkl: str, seed: int = 42, psi: float = None, randomize_noise: bool = False) -> PIL.Image:
     """ Generate single image and returns PIL.Image """
 
     tflib.init_tf()
