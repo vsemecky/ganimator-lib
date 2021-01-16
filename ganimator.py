@@ -3,6 +3,8 @@ import sys
 # Allow import from git submodules
 sys.path.append("./submodules/stylegan2-ada/")
 
+from functions import *
+
 from moviepy.editor import *
 import scipy
 import dnnlib
