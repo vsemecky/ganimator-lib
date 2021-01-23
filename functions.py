@@ -32,7 +32,25 @@ def load_network(pkl):
             return networks_cache[pkl]
 
 
-def generate_image(pkl: str, seed: int = 42, psi: float = None, randomize_noise: bool = False) -> PIL.Image:
+#
+# Generates unified video filename based on opional parameters
+#
+def generate_video_filename(name="video", duration=None, trunc=None, seed=None, timestamp=True):
+    file_name = name.replace("/", "-")
+    if timestamp:
+        file_name += datetime.now().strftime(" - %Y-%m-%d %H:%M")
+    if seed:
+        file_name += " - seed={}".format(seed)
+    if duration:
+        file_name += " - {}sec".format(duration)
+    if trunc:
+        file_name += " - trunc={:03d}".format(int(100 * trunc))
+    file_name += ".mp4"  # Append extension
+
+    return file_name
+
+
+def generate_image(pkl: str, seed: int = 42, trunc: float = None, randomize_noise: bool = False) -> PIL.Image:
     """ Generate single image and returns PIL.Image """
 
     tflib.init_tf()
@@ -42,10 +60,10 @@ def generate_image(pkl: str, seed: int = 42, psi: float = None, randomize_noise:
     Gs_kwargs = dnnlib.EasyDict()
     Gs_kwargs.output_transform = dict(func=tflib.convert_images_to_uint8, nchw_to_nhwc=True)
     Gs_kwargs.randomize_noise = randomize_noise
-    if psi:
-        Gs_kwargs.truncation_psi = psi
+    if trunc:
+        Gs_kwargs.truncation_psi = trunc
 
-    print('Generating image (seed=%d, psi=%f)' % (seed, psi))
+    print('Generating image (seed=%d, trunc=%f)' % (seed, trunc))
     rnd = np.random.RandomState(seed)
     z = rnd.randn(1, *Gs.input_shape[1:])  # [minibatch, component]
     tflib.set_vars({var: rnd.randn(*var.shape.as_list()) for var in noise_vars})  # [height, width]

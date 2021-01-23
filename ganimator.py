@@ -38,8 +38,8 @@ class LatentWalkClip(VideoClip):
     ):
         # Nepouzivane parametry z puvodni funkce
         grid_size = [1, 1]
-        image_shrink = 1
-        image_zoom = 1
+        # image_shrink = 1
+        # image_zoom = 1
 
         tflib.init_tf()
         _G, _D, Gs = load_network(pkl)
@@ -58,16 +58,16 @@ class LatentWalkClip(VideoClip):
             """ Frame generation func for MoviePy """
             frame_idx = int(np.clip(np.round(t * mp4_fps), 0, num_frames - 1))
             latents = all_latents[frame_idx]
-            labels = np.zeros([latents.shape[0], 0], np.float32)
             images = Gs.run(latents, None, truncation_psi=psi, randomize_noise=randomize_noise, output_transform=fmt)
+            return images[0]
 
-            images = images.transpose(0, 3, 1, 2)  # NHWC -> NCHW
-            grid = create_image_grid(images, grid_size).transpose(1, 2, 0)  # HWC
-            # if image_zoom > 1:
-            #     grid = scipy.ndimage.zoom(grid, [image_zoom, image_zoom, 1], order=0)
+            # labels = np.zeros([latents.shape[0], 0], np.float32)
+            # images = images.transpose(0, 3, 1, 2)  # NHWC -> NCHW
+            # grid = create_image_grid(images, grid_size).transpose(1, 2, 0)  # HWC
+            # Grayscale support
             # if grid.shape[2] == 1:
             #     grid = grid.repeat(3, 2)  # grayscale => RGB
-            return grid
+            # return grid
 
         # Create VideoClip
         super().__init__(make_frame=make_frame, duration=duration)
