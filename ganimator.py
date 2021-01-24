@@ -71,3 +71,47 @@ class LatentWalkClip(VideoClip):
 
         # Create VideoClip
         super().__init__(make_frame=make_frame, duration=duration)
+
+
+class ArrayClip(CompositeVideoClip):
+    """
+    Object-oriented implementation of MoviePy function array_clip()
+
+    rows_widths
+      widths of the different rows in pixels. If None, is set automatically.
+
+    cols_widths
+      widths of the different colums in pixels. If None, is set automatically.
+
+    bg_color
+       Fill color for the masked and unfilled regions. Set to None for these
+       regions to be transparent (will be slower).
+
+    """
+
+    def __init__(self, array, rows_widths=None, cols_widths=None, bg_color=None):
+        array = np.array(array)
+        sizes_array = np.array([[c.size for c in line] for line in array])
+
+        # find row width and col_widths automatically if not provided
+        if rows_widths is None:
+            rows_widths = sizes_array[:, :, 1].max(axis=1)
+        if cols_widths is None:
+            cols_widths = sizes_array[:, :, 0].max(axis=0)
+
+        xx = np.cumsum([0] + list(cols_widths))
+        yy = np.cumsum([0] + list(rows_widths))
+
+        for j, (x, cw) in enumerate(zip(xx[:-1], cols_widths)):
+            for i, (y, rw) in enumerate(zip(yy[:-1], rows_widths)):
+                clip = array[i, j]
+                w, h = clip.size
+                if (w < cw) or (h < rw):
+                    clip = (CompositeVideoClip([clip.set_position('center')],
+                                               size=(cw, rw),
+                                               bg_color=bg_color).
+                            set_duration(clip.duration))
+
+                array[i, j] = clip.set_position((x, y))
+
+        super().__init__(array.flatten(), size=(xx[-1], yy[-1]), bg_color=bg_color)
