@@ -115,3 +115,33 @@ class ArrayClip(CompositeVideoClip):
                 array[i, j] = clip.set_position((x, y))
 
         super().__init__(array.flatten(), size=(xx[-1], yy[-1]), bg_color=bg_color)
+
+
+class TruncComparisonClip(ArrayClip):
+    """  """
+    def __init__(
+        self,
+        pkl=None,
+        grid=None, # (width, height)
+        trunc_range=(0.2, 1),
+        rows=3,
+        cols=3,
+        mp4_fps=30,
+        duration=30,  # Duration in seconds
+        smoothing_sec=1.0,
+        randomize_noise=False,
+        seed=420 # Starting seed of the first image
+    ):
+        clips = [[0 for col in range(cols)] for row in range(rows)]
+
+        count = cols * rows
+        step = (trunc_range[1] - trunc_range[0]) / (count -1)
+        i = 0
+        for row in range(0, rows):
+            for col in range(0, cols):
+                psi = i * step
+                clips[row][col] = LatentWalkClip(pkl=pkl, seed=seed, psi=psi, duration=duration)
+                i += 1
+
+        # Arrange clips into ArrayClip (parent class)
+        super().__init__(clips)
