@@ -35,10 +35,14 @@ def load_network(pkl):
 #
 # Generates unified video filename based on opional parameters
 #
-def generate_video_filename(name="video", duration=None, trunc=None, seed=None, timestamp=True):
-    file_name = name.replace("/", "-")
+def generate_video_filename(dataset=None, timestamp=True, name="video", seed=None, duration=None, trunc=None):
+    file_name = ""
+    if dataset:
+        file_name += dataset.replace("/", "-")
     if timestamp:
         file_name += datetime.now().strftime(" - %Y-%m-%d %H:%M")
+    if name:
+        file_name += " - " + name.replace("/", "-")
     if seed:
         file_name += " - seed={}".format(seed)
     if duration:
