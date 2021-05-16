@@ -119,7 +119,6 @@ class InterpolationClip(VideoClip):
             elif isinstance(z, np.ndarray):
                 z.reshape(1, 512)
 
-            Gs_kwargs.truncation_psi = psi  # todo presunout nahoru mimo make_frame
             noise_rnd = np.random.RandomState(1)  # fix noise
             tflib.set_vars({var: noise_rnd.randn(*var.shape.as_list()) for var in noise_vars})  # [height, width]
             images = Gs.run(z, None, **Gs_kwargs)  # [minibatch, height, width, channel]
