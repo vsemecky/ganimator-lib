@@ -15,6 +15,7 @@ from training.misc import create_image_grid
 
 # Memory cache for already loaded pkls
 networks_cache = {}
+networks_Gs_cache = {}
 
 
 # Loads pre-trained network from pkl file or URL
@@ -30,6 +31,18 @@ def load_network(pkl):
             print("Loading neurals: {}".format(pkl))
             networks_cache[pkl] = pickle.load(stream, encoding='latin1')
             return networks_cache[pkl]
+
+
+def load_network_Gs(pkl):
+    if pkl in networks_cache.keys():
+        return networks_cache[pkl]  # Return network from cache
+    else:
+        # Load network from pkl file and store to cache
+        with open(pkl, 'rb') as stream:
+            print("Loading network: {}".format(pkl))
+            _G, _D, Gs = pickle.load(stream, encoding='latin1')
+            networks_cache[pkl] = Gs
+            return Gs
 
 
 #
@@ -79,7 +92,7 @@ def generate_image(pkl: str, seed: int = 42, trunc: float = None, randomize_nois
     """ Generate single image and returns PIL.Image """
 
     tflib.init_tf()
-    _G, _D, Gs = load_network(pkl)  # Loading neurals
+    Gs = load_network_Gs(pkl)  # Loading neurals
     noise_vars = [var for name, var in Gs.components.synthesis.vars.items() if name.startswith('noise')]
 
     Gs_kwargs = dnnlib.EasyDict()
@@ -98,6 +111,7 @@ def generate_image(pkl: str, seed: int = 42, trunc: float = None, randomize_nois
 
 
 def generate_images(pkl, seeds=None, trunc=None, output_dir=None, ext="jpg"):
+    os.makedirs(output_dir, exist_ok=True)
     if seeds is None:
         seeds = [1, 2, 3, 4, 5]
     for seed in seeds:

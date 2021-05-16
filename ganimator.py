@@ -42,7 +42,7 @@ class LatentWalkClip(VideoClip):
         # image_zoom = 1
 
         tflib.init_tf()
-        _G, _D, Gs = load_network(pkl)
+        Gs = load_network_Gs(pkl)
         fmt = dict(func=tflib.convert_images_to_uint8, nchw_to_nhwc=True)
 
         num_frames = int(np.rint(duration * mp4_fps))
@@ -88,7 +88,7 @@ class InterpolationClip(VideoClip):
     ):
         tflib.init_tf()
         # Loading neurals
-        _G, _D, Gs = load_network(pkl)
+        Gs = load_network_Gs(pkl)
 
         noise_vars = [var for name, var in Gs.components.synthesis.vars.items() if name.startswith('noise')]
 
@@ -200,7 +200,7 @@ class TruncComparisonClip(ArrayClip):
         for row in range(0, rows):
             for col in range(0, cols):
                 psi = i * step
-                clips[row][col] = LatentWalkClip(pkl=pkl, seed=seed, psi=psi, duration=duration)
+                clips[row][col] = LatentWalkClip(pkl=pkl, seed=seed, psi=psi, duration=duration, randomize_noise=randomize_noise, smoothing_sec=smoothing_sec)
                 i += 1
 
         # Arrange clips into ArrayClip (parent class)
