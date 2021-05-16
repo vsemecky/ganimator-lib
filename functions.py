@@ -64,13 +64,21 @@ def generate_image(pkl: str, seed: int = 42, trunc: float = None, randomize_nois
     Gs_kwargs = dnnlib.EasyDict()
     Gs_kwargs.output_transform = dict(func=tflib.convert_images_to_uint8, nchw_to_nhwc=True)
     Gs_kwargs.randomize_noise = randomize_noise
-    if trunc:
+    if trunc and trunc != 1:
         Gs_kwargs.truncation_psi = trunc
 
-    print('Generating image (seed=%d, trunc=%f)' % (seed, trunc))
+    print(f'Generating image (seed={seed}, trunc={trunc})')
     rnd = np.random.RandomState(seed)
     z = rnd.randn(1, *Gs.input_shape[1:])  # [minibatch, component]
     tflib.set_vars({var: rnd.randn(*var.shape.as_list()) for var in noise_vars})  # [height, width]
     images = Gs.run(z, None, **Gs_kwargs)  # [minibatch, height, width, channel]
     image_pil = PIL.Image.fromarray(images[0], 'RGB')
     return image_pil
+
+
+def generate_images(pkl, seeds=None, trunc=None, output_dir=None, ext="jpg"):
+    if seeds is None:
+        seeds = [1, 2, 3, 4, 5]
+    for seed in seeds:
+        img = generate_image(pkl=pkl, seed=seed, trunc=trunc)
+        img.save(f"{output_dir}/{seed}.{ext}")
