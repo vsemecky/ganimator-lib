@@ -52,6 +52,27 @@ def generate_video_filename(dataset=None, timestamp=True, name="video", seed=Non
     file_name += ".mp4"  # Append extension
 
     return file_name
+#   return os.path.join(directory, file_name)
+
+
+# from https://colab.research.google.com/drive/1ShgW6wohEFQtqs_znMna3dzrcVoABKIH
+def generate_zs_from_seeds(seeds, Gs):
+    zs = []
+    enam = enumerate(seeds)
+    for seed_idx, seed in enumerate(seeds):
+        rnd = np.random.RandomState(seed)
+        z = rnd.randn(1, *Gs.input_shape[1:])  # [minibatch, component]
+        zs.append(z)
+    return zs
+
+
+def line_interpolate(zs, steps):
+    out = []
+    for i in range(len(zs) - 1):
+        for index in range(steps):
+            fraction = index / float(steps)
+            out.append(zs[i + 1] * fraction + zs[i] * (1 - fraction))
+    return out
 
 
 def generate_image(pkl: str, seed: int = 42, trunc: float = None, randomize_noise: bool = False) -> PIL.Image:

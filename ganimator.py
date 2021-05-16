@@ -73,6 +73,67 @@ class LatentWalkClip(VideoClip):
         super().__init__(make_frame=make_frame, duration=duration)
 
 
+class InterpolationClip(VideoClip):
+    """ Generates interpolation video between seeds """
+
+    def __init__(
+            self,
+            pkl: str,
+            duration: int = 30,
+            seeds: list = [1, 2, 3],
+            psi: float = None,
+            randomize_noise: bool = False,
+            smoothing_sec: float = 1.0,
+            mp4_fps: int = 30
+    ):
+        tflib.init_tf()
+        print('Interpolation clip (psi=%f)' % psi)
+        # Loading neurals
+        _G, _D, Gs = load_network(pkl)
+
+        noise_vars = [var for name, var in Gs.components.synthesis.vars.items() if name.startswith('noise')]
+
+        zs = generate_zs_from_seeds(seeds, Gs)
+
+        num_frames = int(np.rint(duration * mp4_fps))
+        number_of_steps = int(num_frames / (len(zs) - 1)) +1  # todo Prejmenovat na num_steps nebo steps_count/frames_count
+        points = line_interpolate(zs, number_of_steps)
+
+        # Generate_latent_images()
+        Gs_kwargs = dnnlib.EasyDict()
+        Gs_kwargs.output_transform = dict(func=tflib.convert_images_to_uint8, nchw_to_nhwc=True)
+        Gs_kwargs.randomize_noise = False
+
+        # Frame generation func for moviepy
+        def make_frame(t):
+            frame_idx = int(np.clip(np.round(t * mp4_fps), 0, num_frames - 1))
+
+            # TIP: Oddebugovat run_generator,  co mu sem leze, zejmena len(zx)
+            z_idx = frame_idx
+            z = points[z_idx]
+
+            # Puvodni loop
+            if isinstance(z, list):
+                z = np.array(z).reshape(1, 512)
+            elif isinstance(z, np.ndarray):
+                z.reshape(1, 512)
+
+            Gs_kwargs.truncation_psi = psi  # todo presunout nahoru mimo make_frame
+            noise_rnd = np.random.RandomState(1)  # fix noise
+            tflib.set_vars({var: noise_rnd.randn(*var.shape.as_list()) for var in noise_vars})  # [height, width]
+            images = Gs.run(z, None, **Gs_kwargs)  # [minibatch, height, width, channel]
+
+            # todo Zbavit se gridu, kdyz potrebujeme jen jeden obrazek
+            images = images.transpose(0, 3, 1, 2)  # NHWC -> NCHW
+            grid = create_image_grid(images, [1, 1]).transpose(1, 2, 0)  # HWC
+            # if grid.shape[2] == 1:
+            #     grid = grid.repeat(3, 2)  # grayscale => RGB
+            return grid
+
+        # Create VideoClip
+        super().__init__(make_frame=make_frame, duration=duration)
+
+
 class ArrayClip(CompositeVideoClip):
     """
     Object-oriented implementation of MoviePy function array_clip()
