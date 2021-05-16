@@ -83,11 +83,9 @@ class InterpolationClip(VideoClip):
             seeds: list = [1, 2, 3],
             trunc: float = None,
             randomize_noise: bool = False,
-            smoothing_sec: float = 1.0,
             mp4_fps: int = 30
     ):
         tflib.init_tf()
-        # Loading neurals
         Gs = load_network_Gs(pkl)
 
         noise_vars = [var for name, var in Gs.components.synthesis.vars.items() if name.startswith('noise')]
@@ -98,10 +96,9 @@ class InterpolationClip(VideoClip):
         number_of_steps = int(num_frames / (len(zs) - 1)) +1  # todo Prejmenovat na num_steps nebo steps_count/frames_count
         points = line_interpolate(zs, number_of_steps)
 
-        # Generate_latent_images()
         Gs_kwargs = dnnlib.EasyDict()
         Gs_kwargs.output_transform = dict(func=tflib.convert_images_to_uint8, nchw_to_nhwc=True)
-        Gs_kwargs.randomize_noise = False
+        Gs_kwargs.randomize_noise = randomize_noise
         if trunc is not None:
             Gs_kwargs.truncation_psi = trunc
 
@@ -122,13 +119,7 @@ class InterpolationClip(VideoClip):
             noise_rnd = np.random.RandomState(1)  # fix noise
             tflib.set_vars({var: noise_rnd.randn(*var.shape.as_list()) for var in noise_vars})  # [height, width]
             images = Gs.run(z, None, **Gs_kwargs)  # [minibatch, height, width, channel]
-
-            # todo Zbavit se gridu, kdyz potrebujeme jen jeden obrazek
-            images = images.transpose(0, 3, 1, 2)  # NHWC -> NCHW
-            grid = create_image_grid(images, [1, 1]).transpose(1, 2, 0)  # HWC
-            # if grid.shape[2] == 1:
-            #     grid = grid.repeat(3, 2)  # grayscale => RGB
-            return grid
+            return images[0]
 
         # Create VideoClip
         super().__init__(make_frame=make_frame, duration=duration)
