@@ -16,10 +16,10 @@ class StaticImageClip(ImageClip):
             pkl: str,
             duration: int = 30,
             seed: int = 42,
-            psi: float = None,
+            trunc: float = None,
             randomize_noise: bool = False
     ):
-        pil_image = generate_image(pkl=pkl, seed=seed, psi=psi, randomize_noise=randomize_noise)
+        pil_image = generate_image(pkl=pkl, seed=seed, trunc=trunc, randomize_noise=randomize_noise)
         super().__init__(np.array(pil_image), duration=duration)
 
 
@@ -31,7 +31,7 @@ class LatentWalkClip(VideoClip):
             pkl: str,
             duration: int = 30,
             seed: int = 42,
-            psi: float = None,
+            trunc: float = None,
             randomize_noise: bool = False,
             smoothing_sec: float = 1.0,
             mp4_fps: int = 30
@@ -58,7 +58,7 @@ class LatentWalkClip(VideoClip):
             """ Frame generation func for MoviePy """
             frame_idx = int(np.clip(np.round(t * mp4_fps), 0, num_frames - 1))
             latents = all_latents[frame_idx]
-            images = Gs.run(latents, None, truncation_psi=psi, randomize_noise=randomize_noise, output_transform=fmt)
+            images = Gs.run(latents, None, truncation_psi=trunc, randomize_noise=randomize_noise, output_transform=fmt)
             return images[0]
 
             # labels = np.zeros([latents.shape[0], 0], np.float32)
@@ -81,7 +81,7 @@ class InterpolationClip(VideoClip):
             pkl: str,
             duration: int = 30,
             seeds: list = [1, 2, 3],
-            psi: float = None,
+            trunc: float = None,
             randomize_noise: bool = False,
             smoothing_sec: float = 1.0,
             mp4_fps: int = 30
@@ -102,6 +102,8 @@ class InterpolationClip(VideoClip):
         Gs_kwargs = dnnlib.EasyDict()
         Gs_kwargs.output_transform = dict(func=tflib.convert_images_to_uint8, nchw_to_nhwc=True)
         Gs_kwargs.randomize_noise = False
+        if trunc is not None:
+            Gs_kwargs.truncation_psi = trunc
 
         # Frame generation func for moviepy
         def make_frame(t):
@@ -199,8 +201,8 @@ class TruncComparisonClip(ArrayClip):
         i = 0
         for row in range(0, rows):
             for col in range(0, cols):
-                psi = i * step
-                clips[row][col] = LatentWalkClip(pkl=pkl, seed=seed, psi=psi, duration=duration, randomize_noise=randomize_noise, smoothing_sec=smoothing_sec)
+                trunc = i * step
+                clips[row][col] = LatentWalkClip(pkl=pkl, seed=seed, trunc=trunc, duration=duration, randomize_noise=randomize_noise, smoothing_sec=smoothing_sec)
                 i += 1
 
         # Arrange clips into ArrayClip (parent class)

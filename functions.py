@@ -98,7 +98,7 @@ def generate_image(pkl: str, seed: int = 42, trunc: float = None, randomize_nois
     Gs_kwargs = dnnlib.EasyDict()
     Gs_kwargs.output_transform = dict(func=tflib.convert_images_to_uint8, nchw_to_nhwc=True)
     Gs_kwargs.randomize_noise = randomize_noise
-    if trunc and trunc != 1:
+    if trunc is not None:
         Gs_kwargs.truncation_psi = trunc
 
     print(f'Generating image (seed={seed}, trunc={trunc})')
@@ -115,5 +115,6 @@ def generate_images(pkl, seeds=None, trunc=None, output_dir=None, ext="jpg"):
     if seeds is None:
         seeds = [1, 2, 3, 4, 5]
     for seed in seeds:
+        print(f'Generating image (seed={seed}, trunc={trunc})')
         img = generate_image(pkl=pkl, seed=seed, trunc=trunc)
         img.save(f"{output_dir}/{seed}.{ext}")
