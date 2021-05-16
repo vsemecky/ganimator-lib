@@ -87,7 +87,6 @@ class InterpolationClip(VideoClip):
             mp4_fps: int = 30
     ):
         tflib.init_tf()
-        print(f'Interpolation clip (psi={psi})')
         # Loading neurals
         _G, _D, Gs = load_network(pkl)
 
