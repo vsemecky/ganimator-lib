@@ -1,5 +1,6 @@
 # Allow import from git submodules
-import sys sys.path.append("./submodules/stylegan2-ada/")
+import sys
+sys.path.append("./submodules/stylegan2-ada/")
 
 import time
 from moviepy.editor import *
