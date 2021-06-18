@@ -61,14 +61,6 @@ class LatentWalkClip(VideoClip):
             images = Gs.run(latents, None, truncation_psi=trunc, randomize_noise=randomize_noise, output_transform=fmt)
             return images[0]
 
-            # labels = np.zeros([latents.shape[0], 0], np.float32)
-            # images = images.transpose(0, 3, 1, 2)  # NHWC -> NCHW
-            # grid = create_image_grid(images, grid_size).transpose(1, 2, 0)  # HWC
-            # Grayscale support
-            # if grid.shape[2] == 1:
-            #     grid = grid.repeat(3, 2)  # grayscale => RGB
-            # return grid
-
         # Create VideoClip
         super().__init__(make_frame=make_frame, duration=duration)
 

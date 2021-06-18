@@ -1,17 +1,14 @@
-import sys
-
 # Allow import from git submodules
-sys.path.append("./submodules/stylegan2-ada/")
+import sys sys.path.append("./submodules/stylegan2-ada/")
 
+import time
 from moviepy.editor import *
-import scipy
 import dnnlib
 import dnnlib.tflib as tflib
 from datetime import datetime
 import pickle
 import numpy as np
 import PIL.Image
-from training.misc import create_image_grid
 
 # Memory cache for already loaded pkls
 networks_Gs_cache = {}
@@ -52,13 +49,10 @@ def generate_video_filename(dataset=None, timestamp=True, name="video", seed=Non
     file_name += ".mp4"  # Append extension
 
     return file_name
-#   return os.path.join(directory, file_name)
-
 
 # from https://colab.research.google.com/drive/1ShgW6wohEFQtqs_znMna3dzrcVoABKIH
 def generate_zs_from_seeds(seeds, Gs):
     zs = []
-    enam = enumerate(seeds)
     for seed_idx, seed in enumerate(seeds):
         rnd = np.random.RandomState(seed)
         z = rnd.randn(1, *Gs.input_shape[1:])  # [minibatch, component]
