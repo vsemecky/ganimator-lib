@@ -6,6 +6,7 @@ sys.path.append("./submodules/stylegan2-ada/")
 from functions import *
 from moviepy.editor import *
 import numpy as np
+import scipy
 
 
 class StaticImageClip(ImageClip):
