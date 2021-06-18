@@ -28,14 +28,15 @@ def load_network_Gs(pkl):
             networks_Gs_cache[pkl] = Gs
             return Gs
 
-
 #
 # Generates unified video filename based on opional parameters
 #
-def generate_video_filename(dataset=None, timestamp=True, name="video", seed=None, duration=None, trunc=None):
+def generate_video_filename(dataset=None, timestamp=False, name="video", seed=None, duration=None, trunc=None, pkl=None):
     file_name = ""
     if dataset:
         file_name += dataset.replace("/", "-")
+    if pkl:
+        file_name += time.strftime(' - %Y-%m-%d', time.localtime(os.path.getmtime(pkl)))
     if timestamp:
         file_name += datetime.now().strftime(" - %Y-%m-%d %H:%M")
     if name:
