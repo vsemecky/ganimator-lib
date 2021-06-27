@@ -10,6 +10,7 @@ from datetime import datetime
 import pickle
 import numpy as np
 import PIL.Image
+import progressbar
 
 # Memory cache for already loaded pkls
 networks_Gs_cache = {}
@@ -96,7 +97,7 @@ def generate_images(pkl, seeds=None, trunc=None, output_dir=None, ext="jpg"):
     os.makedirs(output_dir, exist_ok=True)
     if seeds is None:
         seeds = [1, 2, 3, 4, 5]
-    for seed in seeds:
+    for seed in progressbar.progressbar(seeds, redirect_stdout=True):
         print(f'Generating image (seed={seed}, trunc={trunc})')
         img = generate_image(pkl=pkl, seed=seed, trunc=trunc)
         img.save(f"{output_dir}/{seed}.{ext}")
