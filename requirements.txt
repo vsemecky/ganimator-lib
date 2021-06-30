@@ -1,3 +1,5 @@
-moviepy>=1.0.3
-Pillow>=8.2.0
-progressbar2>=3.53.1
+Pillow==7.1.2
+progressbar==2.5
+progressbar2==3.38.0
+imgaug<0.2.7,>=0.2.5
+moviepy==1.0.3
