@@ -33,8 +33,12 @@ def load_network_Gs(pkl):
 #
 # Generates unified video filename based on opional parameters
 #
-def generate_video_filename(dataset=None, timestamp=False, name="video", seed=None, duration=None, trunc=None, pkl=None):
-    file_name = ""
+def generate_video_filename(dir=None, dataset=None, timestamp=False, name="video", seed=None, duration=None, trunc=None, pkl=None):
+    if dir:
+        file_name = f"/{dir}/"
+    else:
+        file_name = ""
+
     if dataset:
         file_name += dataset.replace("/", "-")
     if pkl:
