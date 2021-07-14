@@ -190,3 +190,46 @@ class TruncComparisonClip(ArrayClip):
 
         # Arrange clips into ArrayClip (parent class)
         super().__init__(clips)
+
+
+class ProgressClip(VideoClip):
+
+    def __init__(self, sequence, fps=None, durations=None):
+
+        if (fps is None) and (durations is None):
+            raise ValueError("Please provide either 'fps' or 'durations'.")
+
+        VideoClip.__init__(self)
+
+        self.fps = fps
+        if fps is not None:
+            durations = [1.0 / fps for image in sequence]
+            self.images_starts = [1.0 * i / fps - np.finfo(np.float32).eps for i in range(len(sequence))]
+        else:
+            self.images_starts = [0] + list(np.cumsum(durations))
+        self.durations = durations
+        self.duration = sum(durations)
+        self.end = self.duration
+        self.sequence = sequence
+
+        def find_image_index(t):
+            return max([i for i in range(len(self.sequence))
+                        if self.images_starts[i] <= t])
+
+        self.lastindex = None
+        self.lastimage = None
+
+        def make_frame(t):
+
+            index = find_image_index(t)
+
+            if index != self.lastindex:
+                pil_image = Image.open(self.sequence[index])
+                # self.lastimage = imread(self.sequence[index])[:, :, :3]
+                self.lastimage = pil_image
+                self.lastindex = index
+            # return np.array(self.lastimage)
+            return self.lastimage
+
+        self.make_frame = make_frame
+        self.size = make_frame(0).shape[:2][::-1]
