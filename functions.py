@@ -11,6 +11,9 @@ import pickle
 import numpy as np
 import PIL.Image
 import progressbar
+from matplotlib import font_manager
+from moviepy.editor import *
+
 
 # Memory cache for already loaded pkls
 networks_Gs_cache = {}
@@ -29,6 +32,16 @@ def load_network_Gs(pkl):
             _G, _D, Gs = pickle.load(stream, encoding='latin1')
             networks_Gs_cache[pkl] = Gs
             return Gs
+
+
+#
+# Get font path by font-family name
+#
+def font_by_name(family='sans-serif', weight='normal'):
+    return font_manager.findfont(
+        font_manager.FontProperties(family=family, weight=weight)
+)
+
 
 #
 # Generates unified video filename based on opional parameters
@@ -56,6 +69,7 @@ def generate_video_filename(dir=None, dataset=None, timestamp=False, name="video
     file_name += ".mp4"  # Append extension
 
     return file_name
+
 
 # from https://colab.research.google.com/drive/1ShgW6wohEFQtqs_znMna3dzrcVoABKIH
 def generate_zs_from_seeds(seeds, Gs):
@@ -105,3 +119,52 @@ def generate_images(pkl, seeds=None, trunc=None, output_dir=None, ext="jpg"):
         print(f'Generating image (seed={seed}, trunc={trunc})')
         img = generate_image(pkl=pkl, seed=seed, trunc=trunc)
         img.save(f"{output_dir}/{seed}.{ext}")
+
+
+def style_mixing_grid(pkl, row_seeds, col_seeds, truncation_psi, col_styles, outdir, minibatch_size=4):
+    tflib.init_tf()
+    Gs = load_network_Gs(pkl)  # Loading neurals
+
+    w_avg = Gs.get_var('dlatent_avg') # [component]
+    Gs_syn_kwargs = {
+        'output_transform': dict(func=tflib.convert_images_to_uint8, nchw_to_nhwc=True),
+        'randomize_noise': False,
+        'minibatch_size': minibatch_size
+    }
+
+    print('Generating W vectors...')
+    all_seeds = list(set(row_seeds + col_seeds))
+    all_z = np.stack([np.random.RandomState(seed).randn(*Gs.input_shape[1:]) for seed in all_seeds]) # [minibatch, component]
+    all_w = Gs.components.mapping.run(all_z, None) # [minibatch, layer, component]
+    all_w = w_avg + (all_w - w_avg) * truncation_psi # [minibatch, layer, component]
+    w_dict = {seed: w for seed, w in zip(all_seeds, list(all_w))} # [layer, component]
+
+    print('Generating images...')
+    all_images = Gs.components.synthesis.run(all_w, **Gs_syn_kwargs) # [minibatch, height, width, channel]
+    image_dict = {(seed, seed): image for seed, image in zip(all_seeds, list(all_images))}
+
+    print('Generating style-mixed images...')
+    for row_seed in row_seeds:
+        for col_seed in col_seeds:
+            w = w_dict[row_seed].copy()
+            w[col_styles] = w_dict[col_seed][col_styles]
+            image = Gs.components.synthesis.run(w[np.newaxis], **Gs_syn_kwargs)[0]
+            image_dict[(row_seed, col_seed)] = image
+
+    print('Saving image grid...')
+    _N, _C, H, W = Gs.output_shape
+    canvas = PIL.Image.new('RGB', (W * (len(col_seeds) + 1), H * (len(row_seeds) + 1)), 'black')
+    for row_idx, row_seed in enumerate([None] + row_seeds):
+        for col_idx, col_seed in enumerate([None] + col_seeds):
+            if row_seed is None and col_seed is None:
+                continue
+            key = (row_seed, col_seed)
+            if row_seed is None:
+                key = (col_seed, col_seed)
+            if col_seed is None:
+                key = (row_seed, row_seed)
+            canvas.paste(PIL.Image.fromarray(image_dict[key], 'RGB'), (W * col_idx, H * row_idx))
+
+    string_styles = [str(i) for i in col_styles]
+    styles_str = "".join(string_styles)
+    canvas.save(f'{outdir}/grid-{styles_str}.png')

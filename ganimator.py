@@ -3,10 +3,12 @@ import sys
 # Allow import from git submodules
 sys.path.append("./submodules/stylegan2-ada/")
 
-from functions import *
-from moviepy.editor import *
-import numpy as np
+import glob
+import re
 import scipy
+from PIL import Image, ImageFont, ImageDraw
+from moviepy.editor import *
+from functions import *
 
 
 class StaticImageClip(ImageClip):
@@ -194,42 +196,75 @@ class TruncComparisonClip(ArrayClip):
 
 class ProgressClip(VideoClip):
 
-    def __init__(self, sequence, fps=None, durations=None):
-
-        if (fps is None) and (durations is None):
-            raise ValueError("Please provide either 'fps' or 'durations'.")
+    def __init__(self, fakes_dir, fps=30, fps_step=None, height=1080, heading="Training Progress", subheading="StyleGAN"):
 
         VideoClip.__init__(self)
 
+        sequence = sorted(glob.glob(f"{fakes_dir}/fakes??????.jpg"))  # todo: support also png
         self.fps = fps
-        if fps is not None:
-            durations = [1.0 / fps for image in sequence]
-            self.images_starts = [1.0 * i / fps - np.finfo(np.float32).eps for i in range(len(sequence))]
-        else:
-            self.images_starts = [0] + list(np.cumsum(durations))
-        self.durations = durations
-        self.duration = sum(durations)
+        width = height * 16 // 9  # Calc `width` to keep ratio 16:9
+        self.durations = []
+        self.images_starts = []
+        pointer = 0
+        for i, val in enumerate(sequence):
+            if fps_step:  # increasing fps
+                fps_moving = min(fps_step * i + 1, fps)
+                # print(i, "fps_moving", fps_moving)
+                duration = 1.0 / fps_moving
+            else:  # fix fps
+                duration = 1.0 / fps
+            self.durations.append(duration)
+            self.images_starts.append(pointer)
+            pointer += duration
+
+        self.duration = sum(self.durations)
         self.end = self.duration
         self.sequence = sequence
-
-        def find_image_index(t):
-            return max([i for i in range(len(self.sequence))
-                        if self.images_starts[i] <= t])
-
         self.lastindex = None
         self.lastimage = None
 
+        # Calc text block height
+        pil_fake = Image.open(self.sequence[0])  # get test image
+        pil_fake.thumbnail(size=(width, height))
+        text_block_height = height - pil_fake.height
+
+        # Prepare fonts
+        heading_font = ImageFont.truetype(font_by_name('sans-serif', 'bold'), size=text_block_height // 4)
+        subhead_font = ImageFont.truetype(font_by_name('sans-serif', 'normal'), size=text_block_height // 6)
+        counter_font = ImageFont.truetype(font_by_name('monospace', 'normal'), size=text_block_height // 6)
+
+        # Background image with text headings
+        pil_background = Image.new(mode="RGB", size=(width, height), color="black")  # New empty image
+        draw = ImageDraw.Draw(pil_background)
+        # Heading text
+        heading_w, heading_h = draw.textsize(heading, font=heading_font)
+        draw.text(xy=((width - heading_w) // 2, text_block_height // 20), text=heading, fill=(255, 255, 255), font=heading_font, align="center")
+        # Sub-Heading text
+        subh_w, subh_h = draw.textsize(subheading, font=subhead_font)
+        draw.text(xy=((width - subh_w) // 2, heading_h + text_block_height // 10), text=subheading, fill=(255, 255, 255), font=subhead_font, align="center")
+
         def make_frame(t):
 
-            index = find_image_index(t)
+            index = max(
+                [i for i in range(len(self.sequence)) if self.images_starts[i] <= t]
+            )
 
             if index != self.lastindex:
-                pil_image = Image.open(self.sequence[index])
-                # self.lastimage = imread(self.sequence[index])[:, :, :3]
-                self.lastimage = pil_image
+                pil_image = pil_background.copy()
+                pil_fake = Image.open(self.sequence[index])
+                pil_fake.thumbnail(size=(width, height))
+                pil_image.paste(pil_fake, (0, text_block_height))
+
+                # Counter text [kimg]
+                draw = ImageDraw.Draw(pil_image)
+                kimg = re.search(r'\d+', self.sequence[index]).group()
+                text = f"{kimg} kimg"
+                text_w, text_h = draw.textsize(text, font=counter_font)
+                draw.text(xy=((width - text_w) // 2, text_block_height - text_h - text_block_height // 10), text=text, fill=(255, 255, 255), font=counter_font, align="center")
+
+                self.lastimage = np.array(pil_image)
                 self.lastindex = index
-            # return np.array(self.lastimage)
-            return self.lastimage
+            return self.lastimage  # Prevest na array jen jednou a ulozit do lastimage
 
         self.make_frame = make_frame
         self.size = make_frame(0).shape[:2][::-1]
