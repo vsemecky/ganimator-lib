@@ -74,12 +74,16 @@ class InterpolationClip(VideoClip):
     def __init__(
             self,
             pkl: str,
-            duration: int = 30,
+            duration: int = None,
+            step_duration: int = 3,
             seeds: list = [1, 2, 3],
             trunc: float = None,
             randomize_noise: bool = False,
             mp4_fps: int = 30
     ):
+        if duration is None:
+            duration = step_duration * (len(seeds) - 1)
+
         tflib.init_tf()
         Gs = load_network_Gs(pkl)
 
