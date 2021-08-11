@@ -1,5 +1,7 @@
-Pillow==7.1.2
-progressbar==2.5
-progressbar2==3.38.0
-imgaug<0.2.7,>=0.2.5
-moviepy==1.0.3
+moviepy>=1.0.3
+numpy>=1.21.1
+Pillow>=8.3.1
+progressbar>=2.5
+progressbar2>=3.53.1
+scipy>=1.7.1
+matplotlib>=3.4.2
