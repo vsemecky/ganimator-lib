@@ -78,7 +78,7 @@ def draw_text(draw: ImageDraw, image: Image, font, text="Text example", gravity=
 
 
 #
-# Get PIL.ImageFont by options
+# Get PIL ImageFont by options
 #
 def get_image_font(family='sans-serif', weight='normal', size=12):
     font_path = font_manager.findfont(
@@ -134,8 +134,8 @@ def line_interpolate(zs, steps):
     return out
 
 
-def generate_image(pkl: str, seed: int = 42, trunc: float = None, randomize_noise: bool = False) -> PIL.Image:
-    """ Generate single image and returns PIL.Image """
+def generate_image(pkl: str, seed: int = 42, trunc: float = None, randomize_noise: bool = False) -> Image:
+    """ Generate single image and returns PIL Image """
 
     tflib.init_tf()
     Gs = load_network_Gs(pkl)  # Loading neurals
@@ -151,7 +151,7 @@ def generate_image(pkl: str, seed: int = 42, trunc: float = None, randomize_nois
     z = rnd.randn(1, *Gs.input_shape[1:])  # [minibatch, component]
     tflib.set_vars({var: rnd.randn(*var.shape.as_list()) for var in noise_vars})  # [height, width]
     images = Gs.run(z, None, **Gs_kwargs)  # [minibatch, height, width, channel]
-    image_pil = PIL.Image.fromarray(images[0], 'RGB')
+    image_pil = Image.fromarray(images[0], 'RGB')
     return image_pil
 
 
@@ -197,7 +197,7 @@ def style_mixing_grid(pkl, row_seeds, col_seeds, truncation_psi, col_styles, out
 
     print('Saving image grid...')
     _N, _C, H, W = Gs.output_shape
-    canvas = PIL.Image.new('RGB', (W * (len(col_seeds) + 1), H * (len(row_seeds) + 1)), 'black')
+    canvas = Image.new('RGB', (W * (len(col_seeds) + 1), H * (len(row_seeds) + 1)), 'black')
     for row_idx, row_seed in enumerate([None] + row_seeds):
         for col_idx, col_seed in enumerate([None] + col_seeds):
             if row_seed is None and col_seed is None:
@@ -207,7 +207,7 @@ def style_mixing_grid(pkl, row_seeds, col_seeds, truncation_psi, col_styles, out
                 key = (col_seed, col_seed)
             if col_seed is None:
                 key = (row_seed, row_seed)
-            canvas.paste(PIL.Image.fromarray(image_dict[key], 'RGB'), (W * col_idx, H * row_idx))
+            canvas.paste(Image.fromarray(image_dict[key], 'RGB'), (W * col_idx, H * row_idx))
 
     string_styles = [str(i) for i in col_styles]
     styles_str = "".join(string_styles)
