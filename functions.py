@@ -9,7 +9,7 @@ import dnnlib.tflib as tflib
 from datetime import datetime
 import pickle
 import numpy as np
-import PIL.Image
+from PIL import Image, ImageFont, ImageDraw
 import progressbar
 from matplotlib import font_manager
 from moviepy.editor import *
@@ -40,7 +40,51 @@ def load_network_Gs(pkl):
 def font_by_name(family='sans-serif', weight='normal'):
     return font_manager.findfont(
         font_manager.FontProperties(family=family, weight=weight)
-)
+    )
+
+
+#
+# Draw textbox on PIL Image
+#
+def draw_text(draw: ImageDraw, image: Image, font, text="Text example", gravity="South", fill=(20, 20, 20, 255), padding=5, margin=10):
+    text_width, text_height = draw.textsize(text, font=font)
+    gravity = gravity.lower()
+
+    if gravity == 'south':
+        x = (image.width - text_width) // 2
+        y = image.height - text_height - margin - padding
+    elif gravity == 'north':
+        x = (image.width - text_width) // 2
+        y = margin + padding
+    elif gravity == 'center':
+        x = (image.width - text_width) // 2
+        y = (image.height - text_height) // 2
+    elif gravity == 'southwest':
+        x = margin + padding
+        y = image.height - text_height - margin - padding
+    elif gravity == 'southeast':
+        x = image.width - margin - padding - text_width
+        y = image.height - text_height - margin - padding
+    elif gravity == 'northwest':
+        x = y = margin + padding
+    elif gravity == 'northeast':
+        x = image.width - margin - padding - text_width
+        y = margin + padding
+    else:
+        x = y = 0
+
+    draw.rectangle((x - padding, y - padding, x + text_width + padding, y + text_height + padding), fill=fill)
+    draw.text((x, y), text=text, font=font)
+
+
+#
+# Get PIL.ImageFont by options
+#
+def get_image_font(family='sans-serif', weight='normal', size=12):
+    font_path = font_manager.findfont(
+        font_manager.FontProperties(family='sans-serif', weight='normal')
+    )
+    return ImageFont.truetype(font_path, size=size)
 
 
 #
@@ -98,7 +142,7 @@ def generate_image(pkl: str, seed: int = 42, trunc: float = None, randomize_nois
     noise_vars = [var for name, var in Gs.components.synthesis.vars.items() if name.startswith('noise')]
 
     Gs_kwargs = dnnlib.EasyDict()
-    Gs_kwargs.output_transform = dict(func=tflib.convert_images_to_uint8, nchw_to_nhwc=True)
+    Gs_kwargs.output_transform = dict(func=tflib.conv, nchw_to_nhwc=True)
     Gs_kwargs.randomize_noise = randomize_noise
     if trunc is not None:
         Gs_kwargs.truncation_psi = trunc

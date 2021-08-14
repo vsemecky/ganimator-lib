@@ -34,7 +34,7 @@ class LatentWalkClip(VideoClip):
             pkl: str,
             duration: int = 30,
             seed: int = 42,
-            trunc: float = None,
+            trunc: float = 1.0,
             randomize_noise: bool = False,
             smoothing_sec: float = 1.0,
             mp4_fps: int = 30
@@ -77,7 +77,7 @@ class InterpolationClip(VideoClip):
             duration: int = None,
             step_duration: int = 3,
             seeds: list = [1, 2, 3],
-            trunc: float = None,
+            trunc: float = 1.0,
             randomize_noise: bool = False,
             mp4_fps: int = 30
     ):
@@ -98,8 +98,7 @@ class InterpolationClip(VideoClip):
         Gs_kwargs = dnnlib.EasyDict()
         Gs_kwargs.output_transform = dict(func=tflib.convert_images_to_uint8, nchw_to_nhwc=True)
         Gs_kwargs.randomize_noise = randomize_noise
-        if trunc is not None:
-            Gs_kwargs.truncation_psi = trunc
+        Gs_kwargs.truncation_psi = trunc
 
         # Frame generation func for moviepy
         def make_frame(t):
@@ -248,7 +247,6 @@ class ProgressClip(VideoClip):
         draw.text(xy=((width - subh_w) // 2, heading_h + text_block_height // 10), text=subheading, fill=(255, 255, 255), font=subhead_font, align="center")
 
         def make_frame(t):
-
             index = max(
                 [i for i in range(len(self.sequence)) if self.images_starts[i] <= t]
             )
