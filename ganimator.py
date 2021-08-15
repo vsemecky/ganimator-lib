@@ -214,13 +214,13 @@ class TruncComparisonClip(ArrayClip):
                     duration=duration,
                     randomize_noise=randomize_noise,
                     smoothing_sec=smoothing_sec,
-                    fps=fps,
+                    mp4_fps=fps,
                     title=str(round(trunc, 2)),
                 )
                 i += 1
 
-                # Arrange clips into ArrayClip (parent class)
-                super().__init__(clips)
+        # Arrange clips into ArrayClip (parent class)
+        super().__init__(clips)
 
 
 class ProgressClip(VideoClip):
