@@ -19,10 +19,21 @@ class StaticImageClip(ImageClip):
             pkl: str,
             duration: int = 30,
             seed: int = 42,
-            trunc: float = None,
-            randomize_noise: bool = False
+            trunc: float = 1,
+            randomize_noise: bool = False,
+            title=None,
+            title_font_size=None,
     ):
         pil_image = generate_image(pkl=pkl, seed=seed, trunc=trunc, randomize_noise=randomize_noise)
+
+        if title is not None:
+            # Append title text
+            height = 768  # temporary hack
+            title_font_size = title_font_size or height // 32
+            title_font = get_image_font(family='sans-serif', weight='normal', size=title_font_size)
+            draw = ImageDraw.Draw(pil_image, 'RGBA')  # RGBA because of semitransparent rectangle arount the title
+            draw_text(draw=draw, image=pil_image, font=title_font, text=title, gravity="South", fill=(0, 0, 0, 200), margin=height // 64, padding=title_font_size // 5)
+
         super().__init__(np.array(pil_image), duration=duration)
 
 
@@ -43,9 +54,6 @@ class LatentWalkClip(VideoClip):
     ):
         # Nepouzivane parametry z puvodni funkce
         grid_size = [1, 1]
-        # image_shrink = 1
-        # image_zoom = 1
-
         tflib.init_tf()
         Gs = load_network_Gs(pkl)
         height, width = Gs.output_shape[2:]
@@ -153,7 +161,6 @@ class ArrayClip(CompositeVideoClip):
        regions to be transparent (will be slower).
 
     """
-
     def __init__(self, array, rows_widths=None, cols_widths=None, bg_color=None):
         array = np.array(array)
         sizes_array = np.array([[c.size for c in line] for line in array])
@@ -207,19 +214,30 @@ class TruncComparisonClip(ArrayClip):
         for row in range(rows):
             for col in range(cols):
                 trunc = trunc_min + i * step
-                height = 768  # temporary hack (until drivers will be done)
-                clips[row][col] = LatentWalkClip(
-                    pkl=pkl,
-                    seed=seed,
-                    trunc=trunc,
-                    duration=duration,
-                    randomize_noise=randomize_noise,
-                    smoothing_sec=smoothing_sec,
-                    fps=fps,
-                    title="psi " + str(round(trunc, 2)),
-                    title_font_size=rows * height // 32,
-                )
                 i += 1
+                height = 768  # temporary hack (until drivers will be done)
+                if trunc == 0:  # Save some time: Truncation psi=0 generates allways the same average image.
+                    clips[row][col] = StaticImageClip(
+                        pkl=pkl,
+                        seed=seed,
+                        trunc=trunc,
+                        duration=duration,
+                        randomize_noise=randomize_noise,
+                        title="psi0",
+                        title_font_size=rows * height // 32,
+                    )
+                else:
+                    clips[row][col] = LatentWalkClip(
+                        pkl=pkl,
+                        seed=seed,
+                        trunc=trunc,
+                        duration=duration,
+                        randomize_noise=randomize_noise,
+                        smoothing_sec=smoothing_sec,
+                        fps=fps,
+                        title="psi " + str(round(trunc, 2)),
+                        title_font_size=rows * height // 32,
+                    )
 
         # Arrange clips into ArrayClip (parent class)
         super().__init__(clips)
