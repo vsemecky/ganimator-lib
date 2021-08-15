@@ -134,7 +134,7 @@ def line_interpolate(zs, steps):
     return out
 
 
-def generate_image(pkl: str, seed: int = 42, trunc: float = None, randomize_noise: bool = False) -> Image:
+def generate_image(pkl: str, seed: int = 42, trunc: float = 1, randomize_noise: bool = False) -> Image:
     """ Generate single image and returns PIL Image """
 
     tflib.init_tf()
@@ -142,10 +142,9 @@ def generate_image(pkl: str, seed: int = 42, trunc: float = None, randomize_nois
     noise_vars = [var for name, var in Gs.components.synthesis.vars.items() if name.startswith('noise')]
 
     Gs_kwargs = dnnlib.EasyDict()
-    Gs_kwargs.output_transform = dict(func=tflib.conv, nchw_to_nhwc=True)
+    Gs_kwargs.output_transform = dict(func=tflib.convert_images_to_uint8, nchw_to_nhwc=True)
     Gs_kwargs.randomize_noise = randomize_noise
-    if trunc is not None:
-        Gs_kwargs.truncation_psi = trunc
+    Gs_kwargs.truncation_psi = trunc
 
     rnd = np.random.RandomState(seed)
     z = rnd.randn(1, *Gs.input_shape[1:])  # [minibatch, component]
