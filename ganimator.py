@@ -207,6 +207,7 @@ class TruncComparisonClip(ArrayClip):
         for row in range(rows):
             for col in range(cols):
                 trunc = i * step
+                height = 768  # temporary hack (until drivers will be done)
                 clips[row][col] = LatentWalkClip(
                     pkl=pkl,
                     seed=seed,
@@ -216,6 +217,7 @@ class TruncComparisonClip(ArrayClip):
                     smoothing_sec=smoothing_sec,
                     fps=fps,
                     title=str(round(trunc, 2)),
+                    title_font_size=rows * height // 32,
                 )
                 i += 1
 
