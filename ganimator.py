@@ -205,7 +205,15 @@ class TruncComparisonClip(ArrayClip):
         for row in range(0, rows):
             for col in range(0, cols):
                 trunc = i * step
-                clips[row][col] = LatentWalkClip(pkl=pkl, seed=seed, trunc=trunc, duration=duration, randomize_noise=randomize_noise, smoothing_sec=smoothing_sec)
+                clips[row][col] = LatentWalkClip(
+                    pkl=pkl,
+                    seed=seed,
+                    trunc=trunc,
+                    duration=duration,
+                    randomize_noise=randomize_noise,
+                    smoothing_sec=smoothing_sec,
+                    title=f"ψ{trunc}",
+                )
                 i += 1
 
         # Arrange clips into ArrayClip (parent class)
