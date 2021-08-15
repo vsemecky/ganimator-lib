@@ -75,7 +75,7 @@ class LatentWalkClip(VideoClip):
             # Append title text
             pil_image = Image.fromarray(image)
             draw = ImageDraw.Draw(pil_image)
-            draw_text(draw=draw, image=pil_image, font=title_font, text=title, gravity="South", fill=(20, 20, 20, 255), margin=50)
+            draw_text(draw=draw, image=pil_image, font=title_font, text=title, gravity="South", fill=(20, 20, 20), margin=title_font_size // 5)
 
             return np.array(pil_image)
 
@@ -184,26 +184,28 @@ class ArrayClip(CompositeVideoClip):
 
 class TruncComparisonClip(ArrayClip):
     """  """
+
     def __init__(
-        self,
-        pkl=None,
-        grid=None, # (width, height)
-        trunc_range=(0.2, 1),
-        rows=3,
-        cols=3,
-        mp4_fps=30,
-        duration=30,  # Duration in seconds
-        smoothing_sec=1.0,
-        randomize_noise=False,
-        seed=420 # Starting seed of the first image
+            self,
+            pkl=None,
+            grid=(3, 2),  # (cols, rows)
+            trunc_range=(0.0, 1.0),  # (trunc_min, trunc_max)
+            fps=30,  # frames per second
+            duration=10,  # Duration in seconds
+            smoothing_sec=1.0,
+            randomize_noise=False,
+            seed=420  # Starting seed of the first image
     ):
+        cols, rows = grid
+        trunc_min, trunc_max = trunc_range
+        step = (trunc_max - trunc_min) / (cols * rows - 1)
+
+        # empty array rows x cols
         clips = [[0 for col in range(cols)] for row in range(rows)]
 
-        count = cols * rows
-        step = (trunc_range[1] - trunc_range[0]) / (count -1)
         i = 0
-        for row in range(0, rows):
-            for col in range(0, cols):
+        for row in range(rows):
+            for col in range(cols):
                 trunc = i * step
                 clips[row][col] = LatentWalkClip(
                     pkl=pkl,
@@ -212,12 +214,13 @@ class TruncComparisonClip(ArrayClip):
                     duration=duration,
                     randomize_noise=randomize_noise,
                     smoothing_sec=smoothing_sec,
-                    title=f"ψ{trunc}",
+                    mp4_fps=fps,
+                    title=str(round(trunc, 2)),
                 )
                 i += 1
 
-        # Arrange clips into ArrayClip (parent class)
-        super().__init__(clips)
+                # Arrange clips into ArrayClip (parent class)
+                super().__init__(clips)
 
 
 class ProgressClip(VideoClip):
