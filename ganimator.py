@@ -74,8 +74,8 @@ class LatentWalkClip(VideoClip):
 
             # Append title text
             pil_image = Image.fromarray(image)
-            draw = ImageDraw.Draw(pil_image)
-            draw_text(draw=draw, image=pil_image, font=title_font, text=title, gravity="South", fill=(20, 20, 20), margin=title_font_size // 2, padding=title_font_size // 5)
+            draw = ImageDraw.Draw(pil_image, 'RGBA')  # RGBA because of semitransparent rectangle arount the title
+            draw_text(draw=draw, image=pil_image, font=title_font, text=title, gravity="South", fill=(0, 0, 0, 200), margin=height // 64, padding=title_font_size // 5)
 
             return np.array(pil_image)
 
@@ -206,7 +206,7 @@ class TruncComparisonClip(ArrayClip):
         i = 0
         for row in range(rows):
             for col in range(cols):
-                trunc = i * step
+                trunc = trunc_min + i * step
                 height = 768  # temporary hack (until drivers will be done)
                 clips[row][col] = LatentWalkClip(
                     pkl=pkl,
@@ -216,7 +216,7 @@ class TruncComparisonClip(ArrayClip):
                     randomize_noise=randomize_noise,
                     smoothing_sec=smoothing_sec,
                     fps=fps,
-                    title=str(round(trunc, 2)),
+                    title="psi " + str(round(trunc, 2)),
                     title_font_size=rows * height // 32,
                 )
                 i += 1
