@@ -37,7 +37,8 @@ class LatentWalkClip(VideoClip):
             trunc: float = 1.0,
             randomize_noise: bool = False,
             smoothing_sec: float = 1.0,
-            mp4_fps: int = 30
+            mp4_fps: int = 30,
+            title=None,
     ):
         # Nepouzivane parametry z puvodni funkce
         grid_size = [1, 1]
@@ -46,6 +47,7 @@ class LatentWalkClip(VideoClip):
 
         tflib.init_tf()
         Gs = load_network_Gs(pkl)
+        height, width = Gs.output_shape[2:]
         fmt = dict(func=tflib.convert_images_to_uint8, nchw_to_nhwc=True)
 
         num_frames = int(np.rint(duration * mp4_fps))
@@ -57,12 +59,25 @@ class LatentWalkClip(VideoClip):
         all_latents = scipy.ndimage.gaussian_filter(all_latents, [smoothing_sec * mp4_fps] + [0] * len(Gs.input_shape), mode='wrap')
         all_latents /= np.sqrt(np.mean(np.square(all_latents)))
 
+        if title is not None:
+            title_font_size = height // 32
+            title_font = get_image_font(family='sans-serif', weight='normal', size=title_font_size)
+
         def make_frame(t):
             """ Frame generation func for MoviePy """
             frame_idx = int(np.clip(np.round(t * mp4_fps), 0, num_frames - 1))
             latents = all_latents[frame_idx]
             images = Gs.run(latents, None, truncation_psi=trunc, randomize_noise=randomize_noise, output_transform=fmt)
-            return images[0]
+            image = images[0]
+            if title is None:
+                return image
+
+            # Append title text
+            pil_image = Image.fromarray(image)
+            draw = ImageDraw.Draw(pil_image)
+            draw_text(draw=draw, image=pil_image, font=title_font, text=title, gravity="South", fill=(20, 20, 20, 255), margin=50)
+
+            return np.array(pil_image)
 
         # Create VideoClip
         super().__init__(make_frame=make_frame, duration=duration)

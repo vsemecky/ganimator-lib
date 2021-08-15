@@ -46,7 +46,7 @@ def font_by_name(family='sans-serif', weight='normal'):
 #
 # Draw textbox on PIL Image
 #
-def draw_text(draw: ImageDraw, image: Image, font, text="Text example", gravity="South", fill=(20, 20, 20, 255), padding=5, margin=10):
+def draw_text(draw: ImageDraw, image: Image, font, text="Text example", gravity="South", fill=(0, 0, 0), padding=5, margin=10):
     text_width, text_height = draw.textsize(text, font=font)
     gravity = gravity.lower()
 
