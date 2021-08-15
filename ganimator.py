@@ -37,8 +37,9 @@ class LatentWalkClip(VideoClip):
             trunc: float = 1.0,
             randomize_noise: bool = False,
             smoothing_sec: float = 1.0,
-            mp4_fps: int = 30,
+            fps: int = 30,
             title=None,
+            title_font_size=None,
     ):
         # Nepouzivane parametry z puvodni funkce
         grid_size = [1, 1]
@@ -50,22 +51,21 @@ class LatentWalkClip(VideoClip):
         height, width = Gs.output_shape[2:]
         fmt = dict(func=tflib.convert_images_to_uint8, nchw_to_nhwc=True)
 
-        num_frames = int(np.rint(duration * mp4_fps))
+        num_frames = int(np.rint(duration * fps))
         random_state = np.random.RandomState(seed)
 
         # Generating latent vectors
         shape = [num_frames, np.prod(grid_size)] + Gs.input_shape[1:]  # [frame, image, channel, component]
         all_latents = random_state.randn(*shape).astype(np.float32)
-        all_latents = scipy.ndimage.gaussian_filter(all_latents, [smoothing_sec * mp4_fps] + [0] * len(Gs.input_shape), mode='wrap')
+        all_latents = scipy.ndimage.gaussian_filter(all_latents, [smoothing_sec * fps] + [0] * len(Gs.input_shape), mode='wrap')
         all_latents /= np.sqrt(np.mean(np.square(all_latents)))
-
         if title is not None:
-            title_font_size = height // 32
+            title_font_size = title_font_size or height // 32
             title_font = get_image_font(family='sans-serif', weight='normal', size=title_font_size)
 
         def make_frame(t):
             """ Frame generation func for MoviePy """
-            frame_idx = int(np.clip(np.round(t * mp4_fps), 0, num_frames - 1))
+            frame_idx = int(np.clip(np.round(t * fps), 0, num_frames - 1))
             latents = all_latents[frame_idx]
             images = Gs.run(latents, None, truncation_psi=trunc, randomize_noise=randomize_noise, output_transform=fmt)
             image = images[0]
@@ -75,7 +75,7 @@ class LatentWalkClip(VideoClip):
             # Append title text
             pil_image = Image.fromarray(image)
             draw = ImageDraw.Draw(pil_image)
-            draw_text(draw=draw, image=pil_image, font=title_font, text=title, gravity="South", fill=(20, 20, 20), margin=title_font_size // 5)
+            draw_text(draw=draw, image=pil_image, font=title_font, text=title, gravity="South", fill=(20, 20, 20), margin=title_font_size // 2, padding=title_font_size // 5)
 
             return np.array(pil_image)
 
@@ -94,7 +94,7 @@ class InterpolationClip(VideoClip):
             seeds: list = [1, 2, 3],
             trunc: float = 1.0,
             randomize_noise: bool = False,
-            mp4_fps: int = 30
+            fps: int = 30
     ):
         if duration is None:
             duration = step_duration * (len(seeds) - 1)
@@ -106,7 +106,7 @@ class InterpolationClip(VideoClip):
 
         zs = generate_zs_from_seeds(seeds, Gs)
 
-        num_frames = int(np.rint(duration * mp4_fps))
+        num_frames = int(np.rint(duration * fps))
         number_of_steps = int(num_frames / (len(zs) - 1)) +1  # todo Prejmenovat na num_steps nebo steps_count/frames_count
         points = line_interpolate(zs, number_of_steps)
 
@@ -117,7 +117,7 @@ class InterpolationClip(VideoClip):
 
         # Frame generation func for moviepy
         def make_frame(t):
-            frame_idx = int(np.clip(np.round(t * mp4_fps), 0, num_frames - 1))
+            frame_idx = int(np.clip(np.round(t * fps), 0, num_frames - 1))
 
             # TIP: Oddebugovat run_generator,  co mu sem leze, zejmena len(zx)
             z_idx = frame_idx
@@ -214,7 +214,7 @@ class TruncComparisonClip(ArrayClip):
                     duration=duration,
                     randomize_noise=randomize_noise,
                     smoothing_sec=smoothing_sec,
-                    mp4_fps=fps,
+                    fps=fps,
                     title=str(round(trunc, 2)),
                 )
                 i += 1
