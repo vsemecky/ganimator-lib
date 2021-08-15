@@ -214,7 +214,7 @@ class TruncComparisonClip(ArrayClip):
                     duration=duration,
                     randomize_noise=randomize_noise,
                     smoothing_sec=smoothing_sec,
-                    mp4_fps=fps,
+                    fps=fps,
                     title=str(round(trunc, 2)),
                 )
                 i += 1
