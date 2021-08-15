@@ -223,7 +223,7 @@ class TruncComparisonClip(ArrayClip):
                         trunc=trunc,
                         duration=duration,
                         randomize_noise=randomize_noise,
-                        title="psi0",
+                        title="psi 0.0",
                         title_font_size=rows * height // 32,
                     )
                 else:
